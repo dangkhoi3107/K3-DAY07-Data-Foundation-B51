@@ -24,35 +24,37 @@ from src import (
 DATA_DIR = Path("data/k3_university")
 
 BENCHMARKS = [
+    # Bo 5 cau hoi CHUNG cua nhom (report/REPORT_NHOM.md muc 3) - thay cho
+    # bo cau hoi rieng o ban nhap truoc de so sanh duoc voi cac thanh vien khac.
     {
-        "query": "Sinh viên đã đóng học phí và muốn hủy học phần để rút học phí phải nộp phiếu trước thời điểm nào?",
-        "expected_doc_id": "course-registration",
-        "metadata_filter": {"audience": "student"},
-        "gold_answer": "Trước ngày thông báo thời khóa biểu chính thức 10 ngày.",
-    },
-    {
-        "query": "Sinh viên đạt loại xuất sắc được nhận học bổng bằng bao nhiêu lần mức học bổng loại khá?",
-        "expected_doc_id": "scholarship-incentive",
-        "metadata_filter": {"audience": "student"},
-        "gold_answer": "Bằng 1,5 lần mức học bổng loại khá.",
-    },
-    {
-        "query": "Sinh viên được mượn tối đa bao nhiêu tài liệu, trong bao lâu và được gia hạn thế nào?",
+        "query": "Sinh viên được mượn tối đa bao nhiêu tài liệu thư viện và trong bao lâu?",
         "expected_doc_id": "library-services-student",
-        "metadata_filter": {"audience": "student", "department": "library"},
+        "metadata_filter": {"audience": "student"},
         "gold_answer": "Tối đa 3 tài liệu trong 10 ngày; gia hạn tối đa 1 lần, thêm 10 ngày.",
     },
     {
-        "query": "Đối tượng sinh viên nào được giảm 70% học phí?",
-        "expected_doc_id": "tuition-exemption",
-        "metadata_filter": {"audience": "student"},
-        "gold_answer": "Sinh viên dân tộc thiểu số ở thôn/bản đặc biệt khó khăn hoặc xã khu vực III vùng dân tộc và miền núi.",
+        "query": "Sinh viên cần đạt điều kiện gì để được xét học bổng khuyến khích học tập loại khá?",
+        "expected_doc_id": "scholarship-incentive",
+        "metadata_filter": None,
+        "gold_answer": "Đang trong 8 học kỳ chính; học tập và rèn luyện từ loại khá trở lên; không kỷ luật từ mức khiển trách trở lên; đạt ≥5/10 mọi học phần; tín chỉ đăng ký ≥ kế hoạch đào tạo.",
     },
     {
-        "query": "Khách muốn ở lại qua đêm trong ký túc xá phải làm gì?",
+        "query": "Quy trình hủy một học phần đã đăng ký gồm những bước nào?",
+        "expected_doc_id": "course-registration",
+        "metadata_filter": None,
+        "gold_answer": "Nộp Phiếu đề nghị hủy học phần tại Phòng Quản lý đào tạo trong thời hạn quy định; Phòng Tài chính hoàn học phí theo danh sách đã xác nhận hủy.",
+    },
+    {
+        "query": "Ký túc xá cấm những hành vi nào?",
         "expected_doc_id": "dormitory-rules",
-        "metadata_filter": {"audience": "student", "category": "housing"},
-        "gold_answer": "Phải đăng ký và làm đơn bảo lãnh trước.",
+        "metadata_filter": None,
+        "gold_answer": "Uống rượu bia; tàng trữ vũ khí/hung khí/chất nổ/ma túy; nấu ăn/tổ chức sinh nhật trong phòng; đánh bài cờ bạc; gây gổ tụ tập bè phái; vượt rào trèo tường.",
+    },
+    {
+        "query": "Giảng viên/cán bộ có được gia hạn tài liệu mượn từ thư viện không?",
+        "expected_doc_id": "library-services-faculty",
+        "metadata_filter": None,
+        "gold_answer": "Không — không áp dụng gia hạn, tài liệu phải trả đúng đợt thu hồi 25/6 và 25/12 hằng năm.",
     },
 ]
 
