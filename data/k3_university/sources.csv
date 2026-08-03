@@ -1,3 +1,9 @@
 doc_id,file_path,title,source_url,retrieved_at,document_version,license_or_permission
-k3-course-registration,data/k3_university/course-registration.md,Đăng ký học phần,https://example.edu/hoc-vu/dang-ky-hoc-phan,2026-08-02,2026.1,example-template-replace-me
-k3-library-services,data/k3_university/library-services.md,Dịch vụ thư viện,https://example.edu/thu-vien/dich-vu,2026-08-02,2026.1,example-template-replace-me
+course-registration,data/k3_university/course-registration.md,Đăng ký và hủy học phần,https://daotao.ueh.edu.vn/quy-dinh-dang-ky-va-huy-hoc-phan-da-dang-ky-cua-sinh-vien-dai-hoc-chinh-quy-trong-dao-tao-theo-he-thong-tin-chi-tai-truong-dai-hoc-kinh-te-tp-ho-chi-minh/,2026-08-03,not-stated,public-page-no-login-required
+scholarship-incentive,data/k3_university/scholarship-incentive.md,Học bổng khuyến khích học tập,https://daotao.ueh.edu.vn/quy-dinh-xet-cap-hoc-bong-khuyen-khich-hoc-tap-cho-sinh-vien-dai-hoc-chinh-quy/,2026-08-03,not-stated,public-page-no-login-required
+dormitory-rules,data/k3_university/dormitory-rules.md,Nội quy ký túc xá,https://ktx.haui.edu.vn/vn/html/noi-quy,2026-08-03,not-stated,public-page-no-login-required
+tuition-exemption,data/k3_university/tuition-exemption.md,Chính sách miễn giảm học phí,https://student.tdtu.edu.vn/chinh-sach/mien-giam-hoc-phi,2026-08-03,NĐ-238/2025,public-page-no-login-required
+library-services-student,data/k3_university/library-services-student.md,Quy định mượn tài liệu thư viện - sinh viên,https://thuvien.huit.edu.vn/Page/quy-dinh-su-dung-thu-vien,2026-08-03,not-stated,public-page-no-login-required
+library-services-faculty,data/k3_university/library-services-faculty.md,Quy định mượn tài liệu thư viện - giảng viên/cán bộ,https://thuvien.huit.edu.vn/Page/quy-dinh-su-dung-thu-vien,2026-08-03,not-stated,public-page-no-login-required
+faculty-workload,data/k3_university/faculty-workload.md,Chế độ làm việc của giảng viên,https://vnu.edu.vn/quy-dinh-ve-che-do-lam-viec-doi-voi-giang-vien-tai-dhqghn-post30072.html,2026-08-03,not-stated,public-page-no-login-required
+staff-workplace-culture,data/k3_university/staff-workplace-culture.md,Quy chế văn hóa công sở,https://hvnh.edu.vn/tccb/vi/danh-gia-xep-loai-ccvc/quy-che-van-hoa-cong-so-20.html,2026-08-03,QĐ-40/2008,public-page-no-login-required
