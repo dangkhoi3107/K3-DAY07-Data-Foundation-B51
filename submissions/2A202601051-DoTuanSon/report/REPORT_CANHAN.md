@@ -10,7 +10,7 @@
 
 **Tổng điểm phần cá nhân: 60** = Khởi động (5) + Hướng tiếp cận (10) + Hoàn thiện code (30) + Dự đoán độ tương tự (5) + Kết quả truy xuất của tôi (10).
 
-> **Ghi chú kỹ thuật:** phần Dự đoán độ tương tự (mục 4) và Kết quả truy xuất (mục 5) được chạy với backend nhúng **local** `sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2` (`EMBEDDING_PROVIDER=local`) vì mock embeddings chỉ là hash md5, không phản ánh ngữ nghĩa. Toàn bộ 42 unit test (mục 3) vẫn chạy bằng mock như yêu cầu.
+> **Ghi chú kỹ thuật:** phần Dự đoán độ tương tự (mục 4) và Kết quả truy xuất (mục 5) chạy bằng `bench.py` với `HeadingChunker()` trên 8 tài liệu thật của nhóm, backend `SimpleTfidfEmbedder` — TF-IDF thuần Python tự viết (không cần cài `sentence-transformers`), vì mock embeddings chỉ là hash md5, không phản ánh ngữ nghĩa. Toàn bộ 42 unit test (mục 3) vẫn chạy bằng mock như yêu cầu. Mục 5 dùng đúng **5 câu hỏi chung của nhóm** (`report/REPORT_NHOM.md` mục 3), thay cho bộ câu hỏi riêng ở bản nháp trước.
 
 ---
 
@@ -110,37 +110,37 @@ tests/test_solution.py::TestEmbeddingStoreDeleteDocument::test_delete_returns_tr
 
 ## 4. Dự đoán độ tương tự (Similarity Predictions) — Cá nhân (5 điểm)
 
-Đo bằng `compute_similarity` + backend `paraphrase-multilingual-MiniLM-L12-v2`.
+Đo bằng `compute_similarity` + backend `SimpleTfidfEmbedder` (TF-IDF thuần Python).
 
 | Cặp | Câu A | Câu B | Dự đoán | Điểm thực tế | Đúng? |
 |------|-----------|-----------|---------|--------------|-------|
-| 1 | Sinh viên được mượn tối đa 3 tài liệu trong 10 ngày. | Thời hạn mượn sách của sinh viên trong thư viện là bao lâu? | cao | **0.694** | ✅ |
-| 2 | Nội quy ký túc xá cấm sinh viên uống rượu, bia. | Định mức giờ chuẩn giảng dạy của giảng viên mỗi năm. | thấp | **0.092** | ✅ |
-| 3 | Con liệt sỹ được miễn 100% học phí. | Chính sách miễn, giảm học phí cho người có công với cách mạng. | cao | **0.117** | ❌ |
-| 4 | Điều kiện xét học bổng khuyến khích học tập. | Sinh viên cần đạt loại khá trở lên để được cấp học bổng. | cao | **0.793** | ✅ |
-| 5 | Trang phục công sở của cán bộ phải gọn gàng, lịch sự. | Sinh viên được gia hạn tài liệu thư viện thêm 10 ngày. | thấp | **0.068** | ✅ |
+| 1 | Sinh viên được mượn tối đa 3 tài liệu trong 10 ngày. | Thời hạn mượn sách của sinh viên trong thư viện là bao lâu? | cao | **0.2767** | ✅ (đúng hướng, thấp hơn kỳ vọng) |
+| 2 | Nội quy ký túc xá cấm sinh viên uống rượu, bia. | Định mức giờ chuẩn giảng dạy của giảng viên mỗi năm. | thấp | **0.0218** | ✅ |
+| 3 | Con liệt sỹ được miễn 100% học phí. | Chính sách miễn, giảm học phí cho người có công với cách mạng. | cao | **0.2539** | ✅ (đúng hướng, thấp hơn kỳ vọng) |
+| 4 | Điều kiện xét học bổng khuyến khích học tập. | Sinh viên cần đạt loại khá trở lên để được cấp học bổng. | cao | **0.1656** | ✅ (đúng hướng, thấp hơn kỳ vọng) |
+| 5 | Trang phục công sở của cán bộ phải gọn gàng, lịch sự. | Sinh viên được gia hạn tài liệu thư viện thêm 10 ngày. | thấp | **0.0000** | ✅ |
 
 **Kết quả nào bất ngờ nhất? Điều này nói gì về cách embeddings biểu diễn ý nghĩa?**
-> Cặp 3 gây bất ngờ nhất: tôi nghĩ "con liệt sỹ được miễn 100% học phí" và "chính sách miễn giảm học phí cho người có công" rất liên quan (một là trường hợp cụ thể của cái kia), nhưng điểm chỉ **0.117** — coi như thấp. Lý do: hai câu gần như **không trùng từ khóa bề mặt** ("con liệt sỹ" vs "người có công với cách mạng"), câu A rất ngắn và cụ thể còn câu B trừu tượng ở mức chính sách. Điều này cho thấy embedding vẫn chịu ảnh hưởng mạnh của từ vựng/độ dài câu, chưa suy luận được quan hệ "trường hợp con ⊂ nhóm cha"; do đó trong RAG nên chia câu hỏi rõ ràng và dựa vào top-k + metadata thay vì tin tuyệt đối vào một điểm số.
+> Bất ngờ nhất là cặp 1, 3, 4: cả ba đều là paraphrase rõ ràng (cùng ý, khác cách diễn đạt) và dự đoán đúng hướng "cao", nhưng điểm thực tế chỉ 0,17–0,28 — thấp hơn nhiều so với mức "cao" tôi hình dung ban đầu. Lý do: `SimpleTfidfEmbedder` chỉ đếm trùng lặp từ vựng có trọng số IDF, trong khi các câu paraphrase này đổi gần hết từ khóa ("mượn tối đa 3 tài liệu trong 10 ngày" vs "thời hạn mượn sách... là bao lâu?", "loại khá trở lên" vs "khuyến khích học tập"). Điều này cho thấy TF-IDF bắt tốt sự trùng lặp bề mặt nhưng chưa suy luận được quan hệ đồng nghĩa/diễn giải lại — khác với embedding ngữ nghĩa học sẵn (ví dụ sentence-transformers) vốn được kỳ vọng cho điểm cao hơn rõ rệt ở đúng các cặp này. Vẫn đúng thứ tự tương đối (cao > thấp ở mọi cặp) nên vẫn dùng được để rank, chỉ là ngưỡng "cao" cần hiệu chỉnh lại theo backend thực tế.
 
 ---
 
 ## 5. Kết quả truy xuất của tôi (Competition Results) — Cá nhân (10 điểm)
 
-Chạy **5 câu hỏi đánh giá của nhóm** trên mã nguồn cá nhân (chiến lược `HeadingChunker`, backend local, `top_k=3`). Câu 1 dùng `search_with_filter(audience="student")` vì tài liệu thư viện có 2 phiên bản sinh viên/giảng viên với số liệu khác nhau — đây là câu **cần lọc metadata**.
+Chạy **5 câu hỏi đánh giá chung của nhóm** (xem `report/REPORT_NHOM.md` mục 3) trên mã nguồn cá nhân — chiến lược `HeadingChunker()`, backend `SimpleTfidfEmbedder`, `top_k=3`. Trên 8 tài liệu K3 tạo **29 chunk**. Câu 1 dùng `search_with_filter(audience="student")` vì tài liệu thư viện có 2 phiên bản sinh viên/giảng viên với số liệu khác nhau — đây là câu **cần lọc metadata**.
 
 | # | Câu hỏi (Query) | Top-1 Chunk truy xuất được (tóm tắt) | Điểm Score | Có liên quan không? | Câu trả lời của Agent (tóm tắt) |
 |---|-------|--------------------------------|-------|-----------|------------------------|
-| 1 | Sinh viên được mượn tối đa bao nhiêu tài liệu, trong bao lâu? | `library-services-student` → "Số lượng và thời hạn mượn: … tối đa 3 tài liệu trong 10 ngày" | 0.832 | ✅ (top-1) | 3 tài liệu, thời hạn 10 ngày |
-| 2 | Hủy học phần đã đóng học phí nhưng không rút thì hủy trước khi nào? | `course-registration` → "Đóng học phí…" (đúng tài liệu); clause chính xác "trước ngày thi 10 ngày" ở chunk "Thời gian đăng ký" (top-3, 0.691) | 0.720 | ✅ (top-3) | Phải hủy trước ngày thi kết thúc học phần 10 ngày |
-| 3 | Điều kiện xét học bổng khuyến khích học tập là gì? | `scholarship-incentive` → "Điều kiện xét: … 8 học kỳ chính, khá trở lên, không kỷ luật, ≥5/10, tín chỉ ≥ kế hoạch" | 0.785 | ✅ (top-1) | Nêu đủ 5 điều kiện xét học bổng |
-| 4 | Những đối tượng nào được miễn 100% học phí? | `tuition-exemption` → "Đối tượng miễn 100% học phí: người có công, con liệt sỹ, SV khuyết tật, mồ côi…" | 0.454 | ✅ (top-1) | Liệt kê các nhóm được miễn 100% |
-| 5 | Ký túc xá quy định không được thức khuya quá mấy giờ? | `dormitory-rules` → "Giờ giấc và khách: … không được thức khuya quá 23h30" | 0.807 | ✅ (top-1) | Không thức khuya quá 23h30 |
+| 1 | Sinh viên được mượn tối đa bao nhiêu tài liệu thư viện và trong bao lâu? | `library-services-student` → "Số lượng và thời hạn mượn: tối đa 3 tài liệu, 10 ngày" | 0.7626 | ✅ (top-1) | Tối đa 3 tài liệu, thời hạn 10 ngày |
+| 2 | Sinh viên cần đạt điều kiện gì để được xét học bổng khuyến khích học tập loại khá? | `scholarship-incentive` → "Điều kiện xét: 8 học kỳ chính, khá trở lên, không kỷ luật, ≥5/10, tín chỉ ≥ kế hoạch" | 0.6196 | ✅ (top-1) | Nêu đủ điều kiện xét học bổng |
+| 3 | Quy trình hủy một học phần đã đăng ký gồm những bước nào? | `course-registration` → mục "Thời gian đăng ký" (đúng tài liệu; quy trình chi tiết ở top-2, cùng tài liệu, 0.4893) | 0.5518 | ✅ (top-1, đúng tài liệu) | Agent (dựa top-1) trả lời về mốc thời gian đăng ký; chi tiết quy trình hủy nằm ở chunk top-2 |
+| 4 | Ký túc xá cấm những hành vi nào? | `dormitory-rules` → mục **"Hành vi bị cấm"** đúng nguyên văn: "cấm uống rượu, bia; tàng trữ vũ khí...; đánh bài, cờ bạc; gây gổ...; vượt rào, trèo tường" | 0.3886 | ✅ (top-1, đúng cả mục) | Liệt kê đầy đủ và chính xác các hành vi bị cấm |
+| 5 | Giảng viên/cán bộ có được gia hạn tài liệu mượn từ thư viện không? | `library-services-faculty` → "tối đa 3 tài liệu trong 180 ngày" (mục "Gia hạn: không áp dụng" ở top-3, 0.5263) | 0.7407 | ✅ (top-1) | Nêu đúng số lượng/thời hạn giảng viên; chi tiết "không gia hạn" nằm ở top-3 |
 
-**Bao nhiêu câu hỏi trả về chunk có liên quan trong top-3?** **5 / 5** (top-1 chính xác ở 4/5; riêng câu 2, top-1 đúng tài liệu còn mệnh đề mốc "10 ngày trước ngày thi" nằm ở chunk xếp hạng 3).
+**Bao nhiêu câu hỏi trả về chunk có liên quan trong top-3?** **5 / 5**, và **cả 5 câu đều đúng tài liệu ngay ở top-1** — kết quả tốt nhất tôi có trong toàn bộ quá trình thử nghiệm. Đáng chú ý nhất là câu 4: `HeadingChunker` tách đúng nguyên mục `## Hành vi bị cấm` thành 1 chunk trọn vẹn (khác hẳn `RecursiveChunker` mặc định, vốn dễ trộn mục này với các mục lân cận — xem so sánh ở `REPORT_NHOM.md`).
 
 **Điều hay nhất tôi học được từ thành viên khác / nhóm khác (qua demo):**
-> Cùng một bộ tài liệu nhưng mỗi chiến lược chunking cho chất lượng truy xuất rất khác nhau: `FixedSizeChunker` của Khôi cắt đều nên ổn định về kích thước nhưng hay cắt giữa mục, còn `HeadingChunker` của tôi bám cấu trúc tiêu đề nên top-1 thường là đúng nguyên mục cần tìm. Bài học lớn nhất là **chunk quá nhỏ / chỉ chứa tiêu đề sẽ khớp từ khóa nhưng rỗng nội dung** — chính lỗi này khiến tôi phải sửa chunker để gộp section "chỉ có tiêu đề" vào mục sau, và điểm truy xuất câu 3 mới lên đúng.
+> Cùng một bộ tài liệu nhưng mỗi chiến lược chunking cho chất lượng truy xuất rất khác nhau: `FixedSizeChunker` của Khôi cắt đều nên ổn định về kích thước nhưng hay cắt giữa mục, `RecursiveChunker` mặc định (Đức) có thể tách một mục thành nhiều chunk nhỏ nên đôi khi đúng tài liệu nhưng sai chunk, còn `HeadingChunker` của tôi bám cấu trúc tiêu đề nên top-1 gần như luôn là đúng nguyên mục cần tìm (5/5 lần trong benchmark này). Bài học lớn nhất là **chunk quá nhỏ / chỉ chứa tiêu đề sẽ khớp từ khóa nhưng rỗng nội dung** — chính lỗi này khiến tôi phải sửa chunker để gộp section "chỉ có tiêu đề" vào mục sau; nếu không sửa, khả năng cao câu 3 (mục "Quy trình hủy học phần" đứng sau heading ngắn) sẽ bị tách sai.
 
 ---
 
