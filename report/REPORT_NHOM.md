@@ -80,40 +80,90 @@ Chạy `ChunkingStrategyComparator().compare(text, chunk_size=200)` trên 3 tài
 - **Code snippet (nếu custom):** không phải custom, dùng nguyên `FixedSizeChunker` có sẵn trong `src/chunking.py`, chỉ đổi tham số trong `bench.py`.
 
 **Thành viên 2 — Vi Minh Hiển (2A202601743)**
-- **Loại chiến lược:** SentenceChunker
-- **Mô tả & lý do chọn:** *(Hiển tự điền sau khi chạy `bench.py`)*
-- **Code snippet (nếu custom):** không cần, dùng `SentenceChunker` có sẵn.
+- **Loại chiến lược:** `SentenceChunker(max_sentences_per_chunk=3)`
+- **Mô tả & lý do chọn:** Tách theo ranh giới câu (regex `(?<=[.!?])\s+`) rồi gộp tối đa 3 câu/chunk — giữ trọn từng câu quy định, không cắt đứt điều kiện/mốc thời gian nằm giữa câu. Trên 8 tài liệu K3 tạo **19 chunk**. Điểm cộng: còn tự viết thêm `TfidfEmbedder` (TF-IDF chuẩn hoá, không phụ thuộc thư viện ngoài) trong `bench.py` để benchmark có ý nghĩa ngữ nghĩa thật thay vì chỉ dùng MockEmbedder.
+- **Code snippet (nếu custom):** không cần cho chunker, dùng `SentenceChunker` có sẵn trong `src/chunking.py`.
 
 **Thành viên 3 — Nguyễn Đăng Đức (2A202601787)**
 - **Loại chiến lược:** RecursiveChunker (separator mặc định: đoạn → dòng → câu → từ → ký tự)
-- **Mô tả & lý do chọn:** *(Đức tự điền sau khi chạy `bench.py`)*
+- **Mô tả & lý do chọn:** Đệ quy thử separator ưu tiên `["\n\n", "\n", ". ", " ", ""]`, gộp các phần liền kề tới sát `chunk_size=500`; phần nào vẫn dài thì đệ quy xuống separator kế tiếp — giữ ranh giới tự nhiên (đoạn/dòng/câu) của văn bản càng lâu càng tốt (mô tả lấy từ `REPORT_CANHAN.md` của Đức).
 - **Code snippet (nếu custom):** không cần, dùng `RecursiveChunker` có sẵn với separator mặc định.
+- ⚠️ **Chưa xác nhận được (cần Đức tự sửa trước khi nộp):** code Task 1–6 hiện chỉ tồn tại ở `src/NguyenDangDuc/` (bản sao); 3 file gốc `src/chunking.py`/`store.py`/`agent.py` — nơi `tests/test_solution.py` thực sự import — vẫn còn nguyên `NotImplementedError` (5+7+1 = 13 chỗ, đã kiểm tra trực tiếp trên nhánh `dangduc`). Nghĩa là `pytest` trên nhánh này hiện vẫn ra **31 failed, 11 passed**, dù `REPORT_CANHAN.md` đã ghi "42 passed". Chưa có `bench.py` trong repo. Ngoài ra, 5 câu hỏi & gold answer ở mục 5 báo cáo của Đức dùng một bộ câu hỏi khác hẳn bộ 5 câu chung của nhóm, và một vài con số không khớp corpus thật đang dùng (ví dụ ghi "mượn tối đa 3 cuốn trong 14 ngày" trong khi `library-services-student.md` ghi rõ 10 ngày) — cần rà lại sau khi sửa code.
 
 **Thành viên 4 — Đỗ Tuấn Sơn (2A202601051)**
-- **Loại chiến lược:** custom — chunker theo heading/section (bắt buộc theo `K3_VARIANT.md`)
-- **Mô tả & lý do chọn:** *(Sơn tự điền — nên so sánh trực tiếp với nhận xét "chunk vụn" của `RecursiveChunker` ở phần Baseline phía trên, vì đây chính là vấn đề chunker heading/section được kỳ vọng khắc phục)*
+- **Loại chiến lược:** custom — `HeadingChunker` theo heading/section (bắt buộc theo `K3_VARIANT.md`)
+- **Mô tả & lý do chọn:** Quét từng dòng, mở section mới mỗi khi gặp dòng heading Markdown (`#`/`##`/`###`) để mỗi chunk là **một mục ngữ nghĩa trọn vẹn**, đúng vấn đề "chunk vụn" đã nêu ở Baseline Analysis phía trên. Hai xử lý đáng chú ý: (1) section "chỉ có tiêu đề, không nội dung" được gộp vào section kế tiếp để tránh chunk rỗng nghĩa (lỗi Sơn tự phát hiện khi chạy thử); (2) section dài hơn `max_chunk_size` được hạ xuống `RecursiveChunker` để không tạo chunk quá lớn. Trên 8 tài liệu K3 tạo **29 chunk**.
 - **Code snippet (nếu custom):**
 ```python
-# Sơn dán code chunker heading/section của mình vào đây
+class HeadingChunker:
+    """Chunk Markdown theo cấu trúc heading/section (chiến lược tự viết của K3)."""
+
+    def __init__(self, max_heading_level: int = 3, max_chunk_size: int = 1000) -> None:
+        self.max_heading_level = max_heading_level
+        self.max_chunk_size = max_chunk_size
+        self._heading_re = re.compile(rf"^#{{1,{max_heading_level}}}\s+\S")
+
+    def _is_heading(self, line: str) -> bool:
+        return bool(self._heading_re.match(line))
+
+    def chunk(self, text: str) -> list[str]:
+        if not text or not text.strip():
+            return []
+        # Gom các dòng thành từng section, mở section mới mỗi khi gặp heading.
+        sections: list[list[str]] = []
+        current: list[str] = []
+        for line in text.splitlines():
+            if self._is_heading(line) and current:
+                sections.append(current)
+                current = [line]
+            else:
+                current.append(line)
+        if current:
+            sections.append(current)
+
+        # Gộp section "chỉ có tiêu đề" (không nội dung) vào section kế tiếp.
+        merged: list[list[str]] = []
+        carry: list[str] = []
+        for section in sections:
+            body = [ln for ln in section[1:] if ln.strip()]
+            if not body:
+                carry.extend(section)
+            else:
+                merged.append(carry + section)
+                carry = []
+        if carry:
+            merged.append(carry)
+
+        chunks: list[str] = []
+        splitter = RecursiveChunker(chunk_size=self.max_chunk_size)
+        for section in merged:
+            block = "\n".join(section).strip()
+            if not block:
+                continue
+            chunks.extend([block] if len(block) <= self.max_chunk_size else splitter.chunk(block))
+        return chunks
 ```
+  *(nguyên văn từ `src/01051-DoTuanSon/chunking.py` trên nhánh `son` — thiết kế đúng yêu cầu và đã đọc kỹ.)*
+- ⚠️ **Chưa xác nhận được (cần Sơn tự sửa trước khi nộp):** cùng lỗi vị trí code như Đức — toàn bộ Task 1–6 (kể cả `HeadingChunker` ở trên) chỉ nằm ở `src/01051-DoTuanSon/`, còn 3 file gốc `src/chunking.py`/`store.py`/`agent.py` vẫn còn nguyên `NotImplementedError` (13 chỗ) nên `pytest` trên nhánh `son` hiện vẫn ra **31 failed, 11 passed**. Cách sửa đơn giản nhất: copy đè nội dung 3 file từ `src/01051-DoTuanSon/` lên 3 file gốc cùng tên (giống cách Hiển đã làm). Chưa có `bench.py` trong repo dù `REPORT_CANHAN.md` mô tả đã chạy benchmark với backend `sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2`. 5 câu hỏi dùng trong báo cáo cũng khác bộ 5 câu chung của nhóm (2/5 câu là chủ đề khác hẳn, không có gold answer chung để đối chiếu).
 
 **Thành viên 5 — Trần Đức Bảo Trung (2A202601269)**
-- **Loại chiến lược:** RecursiveChunker (tham số khác Nguyễn Đăng Đức)
-- **Mô tả & lý do chọn:** *(Trung tự điền, nêu rõ khác Đức ở tham số nào — chunk_size, separator...)*
-- **Code snippet (nếu custom):** không cần, dùng `RecursiveChunker` có sẵn với tham số khác.
+- **Loại chiến lược:** `RecursiveChunker(chunk_size=420, separators=[". ", "; ", "\n\n", "\n", " ", ""])`
+- **Mô tả & lý do chọn:** Khác Đức ở cả `chunk_size` (420 so với 500) lẫn thứ tự separator — ưu tiên ranh giới câu/mệnh đề (`". "`, `"; "`) trước ranh giới dòng, giúp tránh tạo chunk chỉ có heading trong corpus Markdown nhiều dòng ngắn. Trên 8 tài liệu K3 tạo **24 chunk**. Điểm cộng: tự viết `LightweightVietnameseEmbedder` bọc `sklearn.HashingVectorizer` (char n-gram 3–5, 4096 chiều, chuẩn hoá L2) để benchmark có ngữ nghĩa thật.
+- **Code snippet (nếu custom):** không phải custom cho chunker, dùng `RecursiveChunker` có sẵn, chỉ đổi tham số.
+- ℹ️ Lưu ý nhỏ: `bench.py` của Trung import `sklearn` nhưng `scikit-learn` chưa có trong `requirements.txt`/`requirements-local.txt` — nên thêm vào để người khác chạy lại được đúng hướng dẫn cài đặt.
 
 ### So Sánh Giữa Các Thành Viên
 
 | Thành viên | Chiến lược (Strategy) | Điểm truy xuất (/10) | Điểm mạnh | Điểm yếu |
 |-----------|----------|----------------------|-----------|----------|
 | Phạm Nguyễn Đăng Khôi | FixedSizeChunker (300/60) | 4/10 *(2 câu đúng ở top-2/top-3 × 2đ = 4, xem `REPORT_CANHAN.md` mục 5 — dùng MockEmbedder, chưa phản ánh ngữ nghĩa thật)* | Đơn giản, chunk đều nhau, dễ debug | Cắt cứng theo ký tự, có thể chia đôi câu; không phân biệt được ranh giới ngữ nghĩa |
-| Vi Minh Hiển | SentenceChunker | *(chờ Hiển)* | | |
-| Nguyễn Đăng Đức | RecursiveChunker (mặc định) | *(chờ Đức)* | | |
-| Đỗ Tuấn Sơn | Chunker heading/section | *(chờ Sơn)* | | |
-| Trần Đức Bảo Trung | RecursiveChunker (tham số khác) | *(chờ Trung)* | | |
+| Vi Minh Hiển | SentenceChunker(max_sentences_per_chunk=3) | 8/10 *(3 câu đúng & đầy đủ trong top-3 × 2đ = 6, 2 câu đúng tài liệu nhưng top-1 thiếu chi tiết × 1đ = 2 — xem `REPORT_CANHAN.md` của Hiển mục 5, backend TF-IDF tự viết)* | Giữ trọn từng câu, dễ đọc, không cắt đứt điều kiện/mốc thời gian giữa câu | Độ dài chunk không đều; đôi khi mốc thời gian tách khỏi câu mô tả điều kiện nên top-1 đúng tài liệu nhưng thiếu chi tiết |
+| Nguyễn Đăng Đức | RecursiveChunker (mặc định) | ⚠️ *chưa xác nhận được* | Về thiết kế: giữ ranh giới đoạn/dòng/câu tự nhiên nếu chạy đúng | Code gốc (`src/chunking.py`...) chưa chạy được (13 `NotImplementedError`), báo cáo dùng bộ câu hỏi khác nhóm và có số liệu không khớp corpus — xem cảnh báo ở khối chiến lược phía trên |
+| Đỗ Tuấn Sơn | HeadingChunker (custom) | ⚠️ *chưa xác nhận được* | Thiết kế đúng vấn đề "chunk vụn" của Baseline; xử lý tốt case section chỉ có tiêu đề | Code gốc chưa chạy được (13 `NotImplementedError`, code thật nằm sai thư mục), chưa có `bench.py`, bộ câu hỏi khác nhóm — xem cảnh báo ở khối chiến lược phía trên |
+| Trần Đức Bảo Trung | RecursiveChunker (420, separator câu/mệnh đề trước dòng) | 10/10 *(5/5 câu đúng tài liệu trong top-3 + agent trả lời đầy đủ, xem `REPORT_CANHAN.md` của Trung mục 5, backend HashingVectorizer tự viết)* | Ưu tiên ranh giới câu/mệnh đề trước dòng → tránh chunk chỉ có heading; điểm truy xuất cao nhất nhóm | Cùng họ RecursiveChunker với Đức nên kém đa dạng hơn so với hướng custom theo heading (Sơn) |
 
 **Chiến lược nào tốt nhất cho chủ đề này? Tại sao?**
-> *Viết 2-3 câu — đây là phần được đánh giá cao nhất (khả năng suy nghĩ & giải thích):*
+> Trong số kết quả **đã xác nhận chạy được thật** (Khôi, Hiển, Trung), `RecursiveChunker(chunk_size=420, separator ưu tiên câu/mệnh đề)` của Trung đạt điểm truy xuất cao nhất (10/10) vì corpus K3 là các trang quy định Markdown nhiều heading và dòng ngắn — ưu tiên cắt tại `". "`/`"; "` trước khi cắt tại `"\n"` tránh được đúng lỗi "chunk chỉ còn heading" mà Baseline Analysis đã chỉ ra ở `RecursiveChunker` mặc định. `SentenceChunker` của Hiển (8/10) cũng tốt vì giữ trọn câu. Về mặt **thiết kế** (chưa tính điểm vì code chưa chạy được), `HeadingChunker` của Sơn có lẽ là chiến lược phù hợp nhất về mặt khái niệm cho domain này — vì các tài liệu K3 vốn được viết theo mục có tiêu đề rõ ràng (số lượng/thời hạn, gia hạn, xử lý trễ hạn...) — nhưng cần chạy thật mới kết luận được có vượt qua kết quả của Trung hay không. Bài học chung: **kích thước & separator nên khớp với cấu trúc thật của tài liệu**, không nên giữ nguyên tham số mặc định.
 
 ---
 
@@ -137,29 +187,31 @@ Chạy `ChunkingStrategyComparator().compare(text, chunk_size=200)` trên 3 tài
 
 | # | Câu hỏi | Chiến lược tốt nhất cho câu này | Có chunk liên quan trong top-3? | Ghi chú |
 |---|---------|-------------------------------|-------------------------------|---------|
-| 1 | | | | |
-| 2 | | | | |
-| 3 | | | | |
-| 4 | | | | |
-| 5 | | | | |
+| 1 | Sinh viên mượn tối đa bao nhiêu tài liệu thư viện, trong bao lâu? | Trần Đức Bảo Trung — RecursiveChunker(420) | **Có** ở Trung (top-1, score 0,5402) · **Không** ở Khôi (FixedSize+Mock, sai tài liệu cả top-3) | Cả hai đều dùng đúng `metadata_filter={"audience":"student"}`; chỉ khi embedding có ngữ nghĩa thật (Trung) thì rank mới đúng. |
+| 2 | Điều kiện xét học bổng khuyến khích học tập loại khá? | Trần Đức Bảo Trung — RecursiveChunker(420) | **Có** ở Trung (top-1, score 0,6515) · **Không** ở Khôi | |
+| 3 | Quy trình hủy một học phần đã đăng ký gồm những bước nào? | Trần Đức Bảo Trung — RecursiveChunker(420) | **Có** ở cả hai, nhưng không ở top-1: Trung top-2/3 (0,4737, agent vẫn trả lời đầy đủ) · Khôi top-2 (0,148, context top-1 sai) | Vì agent luôn ghép cả top-3 vào context nên câu trả lời cuối vẫn đúng dù chunk đúng không nằm ở top-1 — minh hoạ tác dụng của `top_k=3` thay vì chỉ lấy top-1. |
+| 4 | Ký túc xá cấm những hành vi nào? | Trần Đức Bảo Trung — RecursiveChunker(420) | **Có** ở Trung (top-1, 0,3396) · **Không** ở Khôi | |
+| 5 | Giảng viên/cán bộ có được gia hạn tài liệu mượn từ thư viện không? | Trần Đức Bảo Trung — RecursiveChunker(420) | **Có** ở cả hai: Trung top-1 (0,7266) · Khôi top-3 (0,245) | Câu "ngoại lệ" (đối lập câu 1) — cả 2 chiến lược đều tìm ra tài liệu `library-services-faculty` dù dùng embedding khác hẳn nhau. |
 
-> Bảng này cần kết quả từ **cả 5 người** mới điền được (phải so sánh chiến lược nào thắng ở từng câu). Dữ liệu thô của Phạm Nguyễn Đăng Khôi (top-3 từng câu, score, agent answer) đã có sẵn ở `REPORT_CANHAN.md` mục 5 — 4 bạn còn lại gửi phần tương ứng của mình theo đúng form đó rồi điền tiếp bảng trên.
+> **Ghi chú phạm vi bảng trên:** chỉ Khôi và Trung dùng **đúng bộ 5 câu hỏi chung** này để chạy `bench.py`, nên chỉ 2 người có trong bảng so từng câu. Hiển và Đức đã chạy benchmark thật (Hiển 5/5, Đức không xác nhận được) nhưng trên **một bộ câu hỏi khác** bộ chung của nhóm (chủ đề trùng nhưng cách hỏi/gold answer khác) — cần Hiển và Đức chạy lại `bench.py` đúng 5 câu hỏi ở bảng mục 3 phía trên rồi bổ sung cột riêng vào bảng này. Sơn chưa có số liệu vì code gốc chưa chạy được (xem cảnh báo ở mục 2).
 
 **Lọc bằng metadata có giúp ích không? Ở câu hỏi nào?**
-> *Viết 2-3 câu — nên tổng hợp từ A/B test (có filter vs không filter) của từng người ở câu hỏi 1.*
+> Có, đặc biệt ở câu 1 và câu 5 — đây là cặp câu hỏi "đối lập" dùng chung một trang nguồn thư viện nhưng khác `audience` (sinh viên: 3 tài liệu/10 ngày, có gia hạn; giảng viên/cán bộ: 3 tài liệu/180 ngày, không gia hạn). A/B test của Khôi cho thấy filter loại đúng 3 tài liệu sai đối tượng khỏi tập ứng viên, nhưng **rank vẫn có thể sai** nếu embedding không mang ngữ nghĩa thật (MockEmbedder) — kết quả của Trung (embedding thật + có filter ở câu 1) cho top-1 đúng ngay, còn Khôi (embedding giả + filter đúng) vẫn chọn sai top-1. Kết luận: **metadata filter thu hẹp đúng không gian tìm kiếm, nhưng không thay thế được chất lượng embedding** — cần cả hai để retrieval đúng.
 
 ---
 
 ## 4. Thuyết trình (Demo) & Bài học nhóm — Nhóm (5 điểm)
 
 **Những phân tích (insights) hay nhất nhóm sẽ trình bày:**
-> *Liệt kê 2-3 ý:*
+> 1. Cùng một corpus 8 tài liệu nhưng 5 chiến lược cho số lượng chunk rất khác nhau (19–29 chunk) và điểm truy xuất trải từ 4/10 đến 10/10 — chứng minh **chunking quyết định retrieval nhiều hơn** chỉ đổi embedding.
+> 2. Chất lượng embedding và metadata filter là **hai trục độc lập**: filter đúng (Khôi, câu 1) vẫn cho rank sai nếu backend không có ngữ nghĩa thật (MockEmbedder); ngược lại backend tốt (TF-IDF của Hiển, HashingVectorizer của Trung) mới phát huy tác dụng khi kết hợp với filter.
+> 3. Vì `KnowledgeBaseAgent` luôn ghép **cả top-3** vào context (không chỉ top-1), câu trả lời cuối cùng vẫn có thể đúng dù chunk đúng chỉ nằm ở top-2/top-3 (câu 3 và câu 5 ở cả Khôi và Trung) — top_k > 1 có tác dụng "vớt" các trường hợp rank chưa hoàn hảo.
 
 **Bài học rút ra khi so sánh trong nhóm:**
-> *Viết 2-3 câu — cùng tài liệu nhưng chiến lược khác nhau dẫn tới khác biệt gì?*
+> Cắt theo ranh giới ngữ nghĩa tự nhiên của tài liệu (câu ở `SentenceChunker`, mục ở `HeadingChunker`, hoặc separator ưu tiên câu/mệnh đề như cấu hình của Trung) luôn cho chunk mạch lạc hơn cắt cứng theo ký tự (`FixedSizeChunker`) hoặc dùng nguyên tham số mặc định của `RecursiveChunker` — corpus K3 gồm các trang quy định Markdown nhiều heading/dòng ngắn nên separator mặc định (`\n\n → \n → ...`) dễ tách sớm ở mỗi dòng heading, tạo chunk vụn (đúng như Baseline Analysis ở mục 2 đã chỉ ra). Bài học thứ hai: **báo cáo và code phải đồng bộ khi nộp** — 2/5 thành viên (Đức, Sơn) viết report rất chi tiết nhưng đặt code triển khai vào thư mục cá nhân thay vì đè lên `src/chunking.py`/`store.py`/`agent.py` gốc mà `tests/test_solution.py` thực sự import, nên `pytest` hiện vẫn fail dù report ghi "42 passed" — cần rà lại đúng cấu trúc thư mục trước khi tính là "xong".
 
 **Nếu làm lại, nhóm sẽ thay đổi gì trong chiến lược dữ liệu (data strategy)?**
-> *Viết 2-3 câu:*
+> Chốt cứng **một bộ 5 câu hỏi + gold answer dùng chung** ngay từ đầu (kèm quy ước không tự đổi câu hỏi) trước khi ai bắt đầu viết `bench.py` — hiện tại Hiển và Đức đã tự chạy benchmark trên bộ câu hỏi khác bộ chung của nhóm nên chưa gộp được vào bảng so sánh 5 người. Đồng thời nên thống nhất từ đầu quy ước vị trí code nộp bài (đè lên file gốc `src/`, không tạo thư mục cá nhân riêng) để tránh đúng lỗi mà Đức và Sơn đang gặp.
 
 ---
 

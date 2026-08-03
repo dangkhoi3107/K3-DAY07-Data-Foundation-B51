@@ -2,14 +2,14 @@
 
 > File này chỉ để nhóm theo dõi tiến độ. Không phải file nộp bắt buộc, nhưng nên cập nhật liên tục trong buổi lab.
 
-## 0. Tình trạng repo hiện tại (cập nhật gần nhất: repo của Khôi đã code xong + test xanh)
+## 0. Tình trạng repo hiện tại (cập nhật 2026-08-03: đã kiểm tra trực tiếp cả 5 nhánh trên remote — xem mục 10)
 
 - [ ] **Python 3.11 đúng chuẩn lab** — máy này vẫn chỉ có Python 3.14.6, chưa cài 3.11 (`py -3.11 --version` báo lỗi "No runtime installed"). Code chỉ dùng thư viện chuẩn (không có gì riêng cho 3.11) nên **đã chạy thử và pass 42/42 trên 3.14** — không chặn tiến độ, nhưng nên cài 3.11 + tạo `.venv` đúng chuẩn trước khi nộp để khớp môi trường cả nhóm.
 - [ ] **`.venv` riêng cho repo** — hiện đang chạy bằng Python global + `pip install` global (`python-dotenv`), chưa có `.venv/`. Nên tạo `.venv` sạch trước khi nộp (xem mục 2).
 - [x] **`src/chunking.py`, `src/store.py`, `src/agent.py` đã code xong cho repo này (Phạm Nguyễn Đăng Khôi)** — `python -m pytest tests -v` → **42 passed**. Chi tiết logic từng Task xem `docs/HUONG_DAN_IMPLEMENTATION.md`.
 - [x] **Corpus 8 tài liệu nguồn thật đã lưu vào repo này** (`data/k3_university/*.md` + `sources.csv`, xem mục 3b) — đã chạy script kiểm CP2: 8/8 file OK, csv khớp, `audience` có 3 giá trị (student/faculty/staff).
 - [x] **`main.py` chạy end-to-end được** trên repo này (đã thử với câu hỏi thư viện, xem log ở cuối mục 1b phần Khôi). Trên Windows nếu gặp `UnicodeEncodeError` khi in tiếng Việt, set `PYTHONIOENCODING=utf-8` trước khi chạy — không phải lỗi code.
-- [ ] `report/REPORT_CANHAN.md` và `report/REPORT_NHOM.md` vẫn là khung mẫu, **chưa điền nội dung thật** — đây là phần mỗi người phải tự viết (câu trả lời warm-up, giải thích hướng code, nhận xét riêng), không nằm trong phần tôi làm sẵn.
+- [x] **`report/REPORT_CANHAN.md` và `report/REPORT_NHOM.md` của Khôi đã điền nội dung thật** — gồm cả bảng so sánh 5 người ở `REPORT_NHOM.md` (mục 2–4), gom từ dữ liệu thật đọc trực tiếp trên 4 nhánh còn lại. Kết quả: Hiển và Trung xong (code sạch, test 42/42); Đức và Sơn còn lỗi chặn (code thật nằm sai thư mục nên test gốc vẫn fail) — chi tiết ở mục 10 bên dưới và trong `REPORT_NHOM.md`.
 - [x] **`docs/HUONG_DAN_IMPLEMENTATION.md` đã tạo** — hướng dẫn chi tiết Task 1–6 (không phải code hoàn chỉnh) để 4 bạn Hiển/Đức/Sơn/Trung tự code.
 - [ ] `.env` chưa tồn tại (không bắt buộc trừ khi dùng local/openai embedding).
 
@@ -504,15 +504,15 @@ staff-workplace-culture,data/k3_university/staff-workplace-culture.md,Quy chế 
 
 | Người | MSSV | Repo GitHub | File chung cả nhóm (copy y hệt từ mục 3b) | File tự viết riêng (không copy) | Trạng thái hiện tại |
 |---|---|---|---|---|---|
-| Phạm Nguyễn Đăng Khôi | 2A202601243 | `DAY07-2A202601243-PhamNguyenDangKhoi` (repo này) | ✅ `data/k3_university/*.md` (8 file) + `sources.csv` — đã có | `src/chunking.py`, `src/store.py`, `src/agent.py` ✅ đã code, 42/42 pass · `bench.py` ⬜ chưa viết · `report/REPORT_CANHAN.md` ⬜ chưa điền | Code+data xong, còn bench.py + 2 report + demo |
-| Vi Minh Hiển | 2A202601743 | `DAY07-2A202601743-ViMinhHien` | ⬜ Copy 8 file + `sources.csv` từ mục 3b | `src/chunking.py`, `src/store.py`, `src/agent.py` — tự code theo `docs/HUONG_DAN_IMPLEMENTATION.md` · `bench.py` (`SentenceChunker`) · `report/REPORT_CANHAN.md` | Chưa bắt đầu |
-| Nguyễn Đăng Đức | 2A202601787 | `DAY07-2A202601787-NguyenDangDuc` | ⬜ Copy 8 file + `sources.csv` từ mục 3b | `src/chunking.py`, `src/store.py`, `src/agent.py` — tự code theo `docs/HUONG_DAN_IMPLEMENTATION.md` · `bench.py` (`RecursiveChunker` mặc định) · `report/REPORT_CANHAN.md` | Chưa bắt đầu |
-| Đỗ Tuấn Sơn | 2A202601051 | `DAY07-2A202601051-DoTuanSon` | ⬜ Copy 8 file + `sources.csv` từ mục 3b | `src/chunking.py`, `src/store.py`, `src/agent.py` — tự code theo `docs/HUONG_DAN_IMPLEMENTATION.md` · `bench.py` (chunker heading/section tự viết) · `report/REPORT_CANHAN.md` | Chưa bắt đầu |
-| Trần Đức Bảo Trung | 2A202601269 | `DAY07-2A202601269-TranDucBaoTrung` | ⬜ Copy 8 file + `sources.csv` từ mục 3b | `src/chunking.py`, `src/store.py`, `src/agent.py` — tự code theo `docs/HUONG_DAN_IMPLEMENTATION.md` · `bench.py` (`RecursiveChunker` tham số khác Đức) · `report/REPORT_CANHAN.md` | Chưa bắt đầu |
+| Phạm Nguyễn Đăng Khôi | 2A202601243 | `DAY07-2A202601243-PhamNguyenDangKhoi` (repo này) | ✅ `data/k3_university/*.md` (8 file) + `sources.csv` — đã có | `src/chunking.py`, `src/store.py`, `src/agent.py` ✅ 42/42 pass · `bench.py` ✅ đã chạy · `report/REPORT_CANHAN.md` ✅ đã điền | ✅ Xong toàn bộ, kể cả `REPORT_NHOM.md` (bảng so sánh 5 người) |
+| Vi Minh Hiển | 2A202601743 | `DAY07-2A202601743-ViMinhHien` (nhánh `hien`) | ✅ đã có | `src/chunking.py`, `src/store.py`, `src/agent.py` ✅ 42/42 pass · `bench.py` ✅ (`SentenceChunker` + tự viết `TfidfEmbedder`) · `report/REPORT_CANHAN.md` ✅ | ✅ Xong, chỉ cần chạy lại `bench.py` với đúng 5 câu hỏi chung của nhóm (hiện dùng bộ câu hỏi khác) |
+| Nguyễn Đăng Đức | 2A202601787 | `DAY07-2A202601787-NguyenDangDuc` (nhánh `dangduc`) | ✅ đã có | `src/NguyenDangDuc/*.py` đã code nhưng **sai vị trí** — 3 file gốc `src/chunking.py`/`store.py`/`agent.py` vẫn còn 13 `NotImplementedError` → `pytest` thật vẫn 31 failed/11 passed · `bench.py` ⬜ chưa có · `report/REPORT_CANHAN.md` đã viết nhưng số liệu không khớp code/corpus | ⚠️ **Chặn** — cần copy đè code lên 3 file gốc, viết `bench.py`, chạy lại report mục 3–5 |
+| Đỗ Tuấn Sơn | 2A202601051 | `DAY07-2A202601051-DoTuanSon` (nhánh `son`) | ✅ đã có (8/8 file đúng) | `src/01051-DoTuanSon/*.py` đã code + `HeadingChunker` tự viết tốt, nhưng **sai vị trí** giống Đức (3 file gốc còn 13 `NotImplementedError`) · `bench.py` ⬜ chưa có · `report/REPORT_CANHAN.md` ✅ đã viết chi tiết | ⚠️ **Chặn** — xem `THAM_KHAO_Son.md`; cần copy đè code lên 3 file gốc + viết `bench.py` |
+| Trần Đức Bảo Trung | 2A202601269 | `DAY07-2A202601269-TranDucBaoTrung` | ✅ đã có | `src/chunking.py`, `src/store.py`, `src/agent.py` ✅ 42/42 pass (sửa thẳng file gốc) · `bench.py` ✅ (`RecursiveChunker(420)` + tự viết `LightweightVietnameseEmbedder`) · `report/REPORT_CANHAN.md` ✅ | ✅ Xong, điểm truy xuất cao nhất nhóm (5/5 đúng top-3) |
 
 **File dùng chung ở mức nhóm (chỉ cần 1 bản, không nhân bản theo người):**
-- `report/REPORT_NHOM.md` — mỗi repo vẫn cần có file này (vì nộp qua repo cá nhân) nhưng **nội dung giống hệt nhau** ở cả 5 repo; 3 bảng đã soạn sẵn ở mục 3b (Data Inventory, Metadata Schema, 5 câu hỏi), phần còn lại (baseline, so sánh 5 strategy, bài học nhóm) chỉ điền được **sau CHECKPOINT 6** khi cả 5 người đã có kết quả benchmark.
+- `report/REPORT_NHOM.md` — mỗi repo vẫn cần có file này (vì nộp qua repo cá nhân) nhưng **nội dung giống hệt nhau** ở cả 5 repo; bản đầy đủ (đã gồm bảng so sánh 5 người) hiện có ở repo của Khôi — 4 bạn còn lại copy nguyên file này vào repo riêng trước khi nộp (sau khi Đức/Sơn/Hiển cập nhật xong phần của mình thì đồng bộ lại 1 lần nữa).
 - `docs/HUONG_DAN_IMPLEMENTATION.md` — tài liệu hướng dẫn (không phải bài nộp), chỉ cần có ở máy/repo của người đang code, không bắt buộc phải nằm trong repo nộp cuối cùng.
 - `CHECKLIST.md` (file này) — công cụ theo dõi tiến độ nội bộ, không phải bài nộp.
 
-**Việc tiếp theo còn thiếu ở repo của Khôi** (ưu tiên theo thứ tự): viết `bench.py` → điền `REPORT_CANHAN.md` → sau khi cả nhóm xong CHECKPOINT 5/6 thì điền `REPORT_NHOM.md`.
+**Việc còn lại trước khi nộp (ưu tiên theo thứ tự):** (1) Đức + Sơn sửa lỗi vị trí code và viết `bench.py` — nếu không sửa, `pytest` sẽ fail ngay khi giảng viên clone repo dù report ghi "42 passed"; (2) Hiển chạy lại `bench.py` bằng đúng 5 câu hỏi chung; (3) cả 4 bạn copy bản `REPORT_NHOM.md` mới nhất (đã có bảng so sánh) vào repo riêng; (4) luyện demo 6–8 phút.
