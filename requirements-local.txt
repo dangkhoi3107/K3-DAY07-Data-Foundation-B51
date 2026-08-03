@@ -1,3 +1,7 @@
 # Optional local embedding demo; not required for coding checkpoints or pytest.
 # Install with: python -m pip install -r requirements-local.txt
 sentence-transformers==5.6.0
+
+# Dung cho bench.py cua Tran Duc Bao Trung (LightweightVietnameseEmbedder
+# boc sklearn.feature_extraction.text.HashingVectorizer).
+scikit-learn==1.7.2
