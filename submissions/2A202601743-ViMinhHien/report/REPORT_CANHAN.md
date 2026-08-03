@@ -1,126 +1,85 @@
 # Báo Cáo Cá Nhân — Lab 7: Embedding & Vector Store
 
-**Họ tên:** [Tên sinh viên]
-**Nhóm:** [Tên nhóm]
-**Ngày:** [Ngày nộp]
+**Họ tên:** Vi Minh Hiển
 
-> **Nộp 1 bản / sinh viên.** Phần nhóm (lựa chọn tài liệu, thiết kế chiến lược, bộ câu hỏi đánh giá, demo) nộp chung 1 bản trong `REPORT_NHOM.md`. Chi tiết thang điểm: `docs/SCORING.md`.
+**MSSV:** 2A202601743
 
-**Tổng điểm phần cá nhân: 60** = Khởi động (5) + Hướng tiếp cận (10) + Hoàn thiện code (30) + Dự đoán độ tương tự (5) + Kết quả truy xuất của tôi (10).
+**Nhóm:** K3-B51
 
----
+**Ngày:** 2026-08-03
 
-## 1. Khởi động (Warm-up) — Cá nhân (5 điểm)
+## 1. Khởi động
 
-### Độ tương tự Cosine (Cosine Similarity) (Bài tập 1.1)
+### Độ tương tự cosine
 
-**Độ tương tự cosine cao (High cosine similarity) nghĩa là gì?**
-> *Viết 1-2 câu:*
+Cosine similarity cao nghĩa là hai vector embedding có hướng gần nhau, thường cho thấy hai đoạn văn có nội dung hoặc ngữ nghĩa tương đồng.
 
-**Ví dụ có độ tương tự CAO:**
-- Câu A:
-- Câu B:
-- Tại sao tương đồng:
+- Ví dụ cao: “Sinh viên được mượn sách trong 10 ngày.” và “Thời hạn mượn tài liệu của sinh viên là 10 ngày.” Hai câu cùng nói về thời hạn mượn tài liệu.
+- Ví dụ thấp: “Sinh viên đăng ký học phần trực tuyến.” và “Giảng viên dành 600 giờ cho nghiên cứu.” Hai câu thuộc hai chủ đề khác nhau.
 
-**Ví dụ có độ tương tự THẤP:**
-- Câu A:
-- Câu B:
-- Tại sao khác:
+Cosine similarity phù hợp với text embedding vì tập trung vào hướng của vector thay vì độ lớn; khoảng cách Euclid có thể bị ảnh hưởng bởi độ lớn vector dù nội dung vẫn tương tự.
 
-**Tại sao độ tương tự cosine (cosine similarity) được ưu tiên hơn khoảng cách Euclid (Euclidean distance) cho text embeddings?**
-> *Viết 1-2 câu:*
+### Bài toán chunking
 
-### Bài toán tính toán Chunking (Bài tập 1.2)
+Với `chunk_size=500`, `overlap=50`:
 
-**Tài liệu 10,000 ký tự, chunk_size=500, overlap=50. Bao nhiêu chunks?**
-> *Trình bày phép tính:*
-> *Đáp án:*
+`ceil((10000 - 50) / (500 - 50)) = ceil(9950 / 450) = 23 chunks`.
 
-**Nếu độ chồng chéo (overlap) tăng lên 100, số lượng chunk thay đổi thế nào? Tại sao muốn độ chồng chéo nhiều hơn?**
-> *Viết 1-2 câu:*
+Nếu tăng overlap lên 100:
 
----
+`ceil((10000 - 100) / (500 - 100)) = ceil(9900 / 400) = 25 chunks`.
 
-## 2. Hướng tiếp cận của tôi (My Approach) — Cá nhân (10 điểm)
+Overlap lớn hơn tạo nhiều chunk hơn nhưng giúp giữ ngữ cảnh ở ranh giới giữa hai chunk.
 
-Giải thích cách tiếp cận của bạn khi lập trình (implement) các phần chính trong gói `src`.
+## 2. Hướng tiếp cận của tôi
 
-### Các hàm chia nhỏ (Chunking Functions)
+### Chunking
 
-**`SentenceChunker.chunk`** — hướng tiếp cận:
-> *Viết 2-3 câu: dùng biểu thức chính quy (regex) gì để phát hiện câu? Xử lý trường hợp ngoại lệ (edge case) nào?*
+`SentenceChunker` dùng regex `(?<=[.!?])\s+` để tách tại khoảng trắng sau dấu kết thúc câu, loại bỏ khoảng trắng thừa rồi nhóm tối đa ba câu. Chuỗi rỗng trả về danh sách rỗng.
 
-**`RecursiveChunker.chunk` / `_split`** — hướng tiếp cận:
-> *Viết 2-3 câu: thuật toán hoạt động thế nào? Base case (trường hợp cơ sở) là gì?*
+`RecursiveChunker` thử lần lượt các separator ưu tiên. Đoạn đã đủ ngắn là base case; đoạn quá dài tiếp tục được chia bằng separator kế tiếp, cuối cùng cắt cứng theo `chunk_size`.
 
-### Lớp EmbeddingStore
+### EmbeddingStore
 
-**`add_documents` + `search`** — hướng tiếp cận:
-> *Viết 2-3 câu: lưu trữ thế nào? Tính độ tương tự ra sao?*
+`add_documents` tạo embedding, metadata chuẩn hóa và ID lưu trữ duy nhất. `search` nhúng truy vấn, tính dot product với từng record, sắp xếp score giảm dần và lấy top-k.
 
-**`search_with_filter` + `delete_document`** — hướng tiếp cận:
-> *Viết 2-3 câu: lọc (filter) trước hay sau? Xóa bằng cách nào?*
+`search_with_filter` lọc metadata trước khi xếp hạng. `delete_document` xóa tất cả record có cùng `metadata['doc_id']` và trả về trạng thái thành công.
 
-### Tác tử KnowledgeBaseAgent
+### KnowledgeBaseAgent
 
-**`answer`** — hướng tiếp cận:
-> *Viết 2-3 câu: cấu trúc prompt? Cách đưa ngữ cảnh (inject context) vào thế nào?*
+Agent truy xuất top-k chunk, ghép chúng vào phần ngữ cảnh của prompt, thêm câu hỏi và yêu cầu chỉ trả lời dựa trên ngữ cảnh trước khi gọi `llm_fn`.
 
----
+## 3. Hoàn thiện code
 
-## 3. Hoàn thiện code (Core Implementation) — Cá nhân (30 điểm)
-
-Vượt qua bộ kiểm thử là điều kiện tính điểm phần này.
-
-### Kết Quả Kiểm Thử (Test Results)
-
-```
-# Dán kết quả (output) của: pytest tests/ -v
+```text
+.......................................... [100%]
+42 passed, 1 warning in 0.11s
 ```
 
-**Số lượng bài test vượt qua (pass):** __ / 42
+**Số lượng test vượt qua:** 42 / 42
 
----
+## 4. Dự đoán độ tương tự
 
-## 4. Dự đoán độ tương tự (Similarity Predictions) — Cá nhân (5 điểm)
+Lần chạy này dùng backend TF-IDF chuẩn hóa, tái lập được và không dùng mock ngẫu nhiên.
 
 | Cặp | Câu A | Câu B | Dự đoán | Điểm thực tế | Đúng? |
-|------|-----------|-----------|---------|--------------|-------|
-| 1 | | | cao / thấp | | |
-| 2 | | | cao / thấp | | |
-| 3 | | | cao / thấp | | |
-| 4 | | | cao / thấp | | |
-| 5 | | | cao / thấp | | |
+|---|---|---|---|---:|---|
+| 1 | Sinh viên được mượn tối đa 3 tài liệu trong 10 ngày. | Thời hạn mượn sách của sinh viên là 10 ngày, tối đa 3 tài liệu. | Cao | 0.7400 | Có |
+| 2 | Sinh viên xuất sắc nhận học bổng bằng 1,5 lần mức khá. | Mức học bổng loại xuất sắc cao gấp 1,5 lần loại khá. | Cao | 0.6091 | Có |
+| 3 | Ký túc xá cấm sinh viên uống rượu bia trong phòng. | Sinh viên nội trú không được sử dụng đồ uống có cồn. | Cao | 0.1470 | Không |
+| 4 | Sinh viên phải đăng ký học phần đúng thời hạn. | Giảng viên dành tối thiểu 600 giờ mỗi năm cho nghiên cứu khoa học. | Thấp | 0.0512 | Có |
+| 5 | Sinh viên thuộc diện chính sách có thể được miễn học phí. | Điện thoại di động phải tắt trong cuộc họp. | Thấp | 0.0000 | Có |
 
-**Kết quả nào bất ngờ nhất? Điều này nói gì về cách embeddings biểu diễn ý nghĩa?**
-> *Viết 2-3 câu:*
+Cặp 3 bất ngờ nhất vì hai câu gần nghĩa nhưng dùng ít từ giống nhau. Điều này cho thấy TF-IDF nắm bắt từ vựng tốt nhưng kém hơn embedding ngữ nghĩa khi gặp diễn đạt đồng nghĩa.
 
----
+## 5. Kết quả truy xuất của tôi
 
-## 5. Kết quả truy xuất của tôi (Competition Results) — Cá nhân (10 điểm)
+**Strategy:** `SentenceChunker(max_sentences_per_chunk=3)`
 
-<<<<<<< HEAD
-Chạy **5 câu hỏi đánh giá của nhóm** trên mã nguồn cá nhân của bạn trong gói `src`. **5 câu hỏi này phải trùng với các thành viên cùng nhóm** (xem `REPORT_NHOM.md`).
-=======
 **Backend:** normalized TF-IDF (tự viết, dependency-free)
->>>>>>> origin/hien
 
-| # | Câu hỏi (Query) | Top-1 Chunk truy xuất được (tóm tắt) | Điểm Score | Có liên quan không? (Relevant) | Câu trả lời của Agent (tóm tắt) |
-|---|-------|--------------------------------|-------|-----------|------------------------|
-| 1 | | | | | |
-| 2 | | | | | |
-| 3 | | | | | |
-| 4 | | | | | |
-| 5 | | | | | |
+**Corpus:** 8 tài liệu, 19 chunks
 
-<<<<<<< HEAD
-**Bao nhiêu câu hỏi trả về chunk có liên quan trong top-3?** __ / 5
-
-**Điều hay nhất tôi học được từ thành viên khác / nhóm khác (qua demo):**
-> *Viết 2-3 câu:*
-
----
-=======
 > Cập nhật: chạy lại bằng đúng **5 câu hỏi chung của nhóm** (`report/REPORT_NHOM.md` mục 3) thay cho bộ câu hỏi riêng ở bản nháp trước, để so sánh trực tiếp được với các thành viên khác trong bảng tổng hợp của nhóm.
 
 | # | Query | Top-1 chunk | Score | Relevant | Câu trả lời Agent tóm tắt |
@@ -134,20 +93,10 @@ Chạy **5 câu hỏi đánh giá của nhóm** trên mã nguồn cá nhân củ
 **Số query có tài liệu liên quan trong top-3:** 5 / 5. **Điểm truy xuất theo `docs/SCORING.md`:** 2+2+1+2+2 = **9/10** (chỉ câu 3 chưa trọn vẹn — đúng tài liệu ở top-1 nhưng chưa phải đúng đoạn quy trình).
 
 **Nhận xét:** `SentenceChunker(max_sentences_per_chunk=3)` có xu hướng gộp 2-3 mục `##` liền kề vào 1 chunk (vì mỗi mục thường chỉ 1-2 câu) — đây là lý do câu 1, 4, 5 có câu trả lời đầy đủ ngay top-1 dù câu hỏi cần thông tin từ nhiều mục con. Ngược lại câu 3 bị tách vì "Thời gian đăng ký" và "Quy trình hủy học phần" đủ dài để thành 2 chunk riêng. Qua phân công chiến lược, mình nhận thấy SentenceChunker giữ câu trọn vẹn và dễ đọc, trong khi chunking theo heading (như Đỗ Tuấn Sơn) giữ đúng ranh giới mục hơn nên ít bị hiện tượng "gộp may rủi" như trên.
->>>>>>> origin/hien
 
-## Tự Đánh Giá (Phần Cá Nhân)
+## Tự đánh giá
 
 | Tiêu chí | Điểm tự đánh giá |
-<<<<<<< HEAD
-|----------|-------------------|
-| Khởi động (Warm-up) | / 5 |
-| Hướng tiếp cận của tôi (My Approach) | / 10 |
-| Hoàn thiện code (Core Implementation — tests) | / 30 |
-| Dự đoán độ tương tự (Similarity Predictions) | / 5 |
-| Kết quả truy xuất của tôi (Competition Results) | / 10 |
-| **Tổng phần cá nhân** | **/ 60** |
-=======
 |---|---:|
 | Khởi động | 5 / 5 |
 | Hướng tiếp cận | 10 / 10 |
@@ -155,4 +104,3 @@ Chạy **5 câu hỏi đánh giá của nhóm** trên mã nguồn cá nhân củ
 | Dự đoán similarity | 4 / 5 |
 | Kết quả truy xuất | 9 / 10 |
 | **Tổng phần cá nhân** | **58 / 60** |
->>>>>>> origin/hien
