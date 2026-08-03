@@ -9,6 +9,8 @@
 
 **Tổng điểm phần cá nhân: 60** = Khởi động (5) + Hướng tiếp cận (10) + Hoàn thiện code (30) + Dự đoán độ tương tự (5) + Kết quả truy xuất của tôi (10).
 
+> **Ghi chú kỹ thuật:** mục 4 và 5 chạy bằng `bench.py` với `RecursiveChunker()` (separator mặc định) trên 8 tài liệu thật của nhóm, backend TF-IDF thuần Python tự viết (không cần cài thêm thư viện, xem lớp `SimpleTfidfEmbedder` trong `bench.py`) — không dùng MockEmbedder nên số liệu phản ánh ngữ nghĩa thật.
+
 ---
 
 ## 1. Khởi động (Warm-up) — Cá nhân (5 điểm)
@@ -133,14 +135,14 @@ tests/test_solution.py::TestEmbeddingStoreDeleteDocument::test_delete_returns_tr
 
 | Cặp | Câu A | Câu B | Dự đoán | Điểm thực tế | Đúng? |
 |------|-----------|-----------|---------|--------------|-------|
-| 1 | Quy định nộp học phí trực tuyến | Hướng dẫn thanh toán tiền học qua ngân hàng | cao | 0.85 | Đúng |
-| 2 | Quy định đăng ký môn học | Lịch thi kết thúc học phần | thấp | 0.32 | Đúng |
-| 3 | Thủ tục xin cấp lại thẻ sinh viên | Hướng dẫn làm lại thẻ sinh viên bị mất | cao | 0.91 | Đúng |
-| 4 | Điều kiện xét học bổng khuyến khích | Quy định về ký túc xá sinh viên | thấp | 0.18 | Đúng |
-| 5 | Đăng ký phòng ở ký túc xá | Nộp tiền ở nội trú trường | cao | 0.78 | Đúng |
+| 1 | Sinh viên đăng ký học phần theo thời khóa biểu từng học kỳ. | Việc đăng ký môn học của sinh viên thực hiện theo lịch mỗi kỳ. | cao | 0.4345 | Đúng, nhưng thấp hơn kỳ vọng |
+| 2 | Học bổng loại giỏi bằng 1,2 lần mức khá. | Mức học bổng loại giỏi cao hơn loại khá 1,2 lần. | cao | 0.8483 | Đúng |
+| 3 | Ký túc xá cấm sinh viên đánh bài, cờ bạc. | Giảng viên phải dành 600 giờ mỗi năm cho nghiên cứu khoa học. | thấp | 0.0215 | Đúng |
+| 4 | Hồ sơ miễn giảm học phí cần đơn đề nghị và giấy xác nhận. | Trang phục công sở phải gọn gàng, lịch sự. | thấp | 0.0000 | Đúng |
+| 5 | Tài liệu thư viện của giảng viên phải trả đúng đợt thu hồi. | Giảng viên, cán bộ không được gia hạn tài liệu đã mượn. | cao | 0.2673 | Đúng, nhưng thấp hơn kỳ vọng |
 
 **Kết quả nào bất ngờ nhất? Điều này nói gì về cách embeddings biểu diễn ý nghĩa?**
-> Cặp 1 và 5 cho thấy embedding phản ánh tốt ngữ nghĩa tương đồng mặc dù hai câu dùng từ ngữ khác nhau ("thanh toán tiền học qua ngân hàng" vs "nộp học phí trực tuyến"). Điều này khẳng định embeddings học biểu diễn không gian khái niệm thay vì chỉ khớp từ khóa đơn thuần.
+> Cặp 1 và cặp 5 bất ngờ nhất: cả hai là paraphrase rõ ràng (cùng một ý, đổi cấu trúc câu) nhưng điểm chỉ 0.43 và 0.27 — thấp hơn nhiều so với cặp 2 (0.85, gần như trùng từ vựng). Lý do: `SimpleTfidfEmbedder` chỉ đếm từ trùng lặp (bag-of-words có trọng số IDF), không hiểu quan hệ đồng nghĩa ("đăng ký học phần" vs "đăng ký môn học", "trả đúng đợt thu hồi" vs "không được gia hạn" — cùng ý nhưng gần như không chung từ khóa). Điều này cho thấy TF-IDF nắm tốt sự trùng lặp bề mặt nhưng chưa biểu diễn được ngữ nghĩa sâu như embedding học sẵn (sentence-transformers) — đúng hạn chế đã biết của TF-IDF so với embedding ngữ nghĩa thật.
 
 ---
 
@@ -148,18 +150,20 @@ tests/test_solution.py::TestEmbeddingStoreDeleteDocument::test_delete_returns_tr
 
 Chạy **5 câu hỏi đánh giá của nhóm** trên mã nguồn cá nhân của bạn trong gói `src`. **5 câu hỏi này phải trùng với các thành viên cùng nhóm** (xem `REPORT_NHOM.md`).
 
+Thiết lập: `RecursiveChunker()` (separator mặc định) trên 8 tài liệu `data/k3_university/` → **17 chunk**. Backend: `SimpleTfidfEmbedder` (TF-IDF thuần Python, tự viết trong `bench.py`).
+
 | # | Câu hỏi (Query) | Top-1 Chunk truy xuất được (tóm tắt) | Điểm Score | Có liên quan không? (Relevant) | Câu trả lời của Agent (tóm tắt) |
 |---|-------|--------------------------------|-------|-----------|------------------------|
-| 1 | Hạn nộp học phí học kỳ 1 khi nào? | Quy định học phí: Hạn chót đóng tiền là ngày 15/10. | 0.88 | Có | Hạn nộp học phí học kỳ 1 là ngày 15/10. |
-| 2 | Điều kiện xin học bổng khuyến khích học tập? | Học bổng: Điểm Rèn luyện >= 80 và ĐTB học tập >= 3.2. | 0.84 | Có | Sinh viên cần có ĐTB >= 3.2 và ĐRL >= 80. |
-| 3 | Thủ tục đăng ký ký túc xá như thế nào? | Ký túc xá: Đăng ký trực tuyến trên portal từ 01/08. | 0.81 | Có | Sinh viên đăng ký online qua portal từ ngày 01/08. |
-| 4 | Thời gian mượn sách thư viện tối đa bao lâu? | Thư viện: Sinh viên được mượn tối đa 3 cuốn trong 14 ngày. | 0.86 | Có | Thời gian mượn tối đa là 14 ngày đối với 3 cuốn sách. |
-| 5 | Làm sao để hủy môn học đã đăng ký? | Đăng ký môn: Hủy môn học trong 2 tuần đầu học kỳ. | 0.79 | Có | Sinh viên thực hiện hủy môn trên hệ thống trong 2 tuần đầu. |
+| 1 | Sinh viên được mượn tối đa bao nhiêu tài liệu thư viện và trong bao lâu? *(filter `audience=student`)* | `library-services-student`: "tối đa 3 tài liệu trong thời hạn 10 ngày" | 0.5702 | Có (top-1) | Tối đa 3 tài liệu, thời hạn 10 ngày, gia hạn thêm 1 lần 10 ngày |
+| 2 | Sinh viên cần đạt điều kiện gì để được xét học bổng khuyến khích học tập loại khá? | `scholarship-incentive`: "8 học kỳ chính, khá trở lên, không kỷ luật, ≥5/10, tín chỉ ≥ kế hoạch" | 0.6196 | Có (top-1) | Nêu đủ các điều kiện xét học bổng |
+| 3 | Quy trình hủy một học phần đã đăng ký gồm những bước nào? | `course-registration`: "Thời gian đăng ký" (top-2 mới đúng đoạn quy trình hủy chi tiết, score 0.5171) | 0.5518 | Có (top-1, đúng tài liệu) | Agent dùng top-1 (mục thời gian đăng ký) — nội dung quy trình hủy đầy đủ hơn nằm ở top-2 cùng tài liệu |
+| 4 | Ký túc xá cấm những hành vi nào? | `dormitory-rules` (top-1 = mục "Giờ giấc và khách", top-2 = mục "Xử lý vi phạm") — **đúng tài liệu nhưng chunk chứa danh sách hành vi cấm thật sự (mục "Hành vi bị cấm") không lọt vào top-3** | 0.3972 | Một phần — đúng `doc_id` nhưng thiếu đúng đoạn | Agent (dựa top-1) trả lời về giờ giấc/khách chứ chưa liệt kê được rượu bia, vũ khí, cờ bạc... — đây là **failure case cụ thể**: `RecursiveChunker` mặc định tách `dormitory-rules` thành nhiều mục nhỏ theo `##`, và với câu hỏi này 2/3 chunk lọt top-3 không phải mục cần thiết |
+| 5 | Giảng viên/cán bộ có được gia hạn tài liệu mượn từ thư viện không? | `library-services-faculty`: "tối đa 3 tài liệu trong 180 ngày, không áp dụng gia hạn" | 0.6829 | Có (top-1) | Không được gia hạn; phải trả đúng đợt thu hồi 25/6 và 25/12 |
 
-**Bao nhiêu câu hỏi trả về chunk có liên quan trong top-3?** **5** / 5
+**Bao nhiêu câu hỏi trả về chunk có liên quan trong top-3?** Theo `doc_id`: **5/5**. Nhưng xét đúng **nội dung** cần thiết thì câu 4 chưa đạt — chunk mang thông tin trả lời (danh sách hành vi cấm) không nằm trong top-3, dù đúng tài liệu. Câu 3 đúng tài liệu ở top-1 nhưng đoạn quy trình chi tiết nằm ở top-2 (agent vẫn nhìn thấy vì dùng top-3 làm context).
 
-**Điều hay nhất tôi học được từ thành viên khác / nhóm khác (qua demo):**
-> Việc kết hợp chiến lược chia nhỏ linh hoạt (RecursiveChunker) kết hợp với lọc Metadata (pre-filtering) giúp tăng rõ rệt độ chính xác khi truy xuất tài liệu trong các bài toán quy định phức tạp.
+**Điều hay nhất tôi học được từ việc đối chiếu với các thành viên khác:**
+> `RecursiveChunker` mặc định (separator ưu tiên đoạn/dòng trước câu) đôi khi tách một tài liệu thành nhiều chunk nhỏ theo từng mục (`##`), nên top-1 có thể đúng tài liệu nhưng chưa phải đoạn chứa câu trả lời chi tiết nhất (câu 3, câu 4) — trong khi các bạn dùng chunker ưu tiên ranh giới câu/mệnh đề (như cấu hình `RecursiveChunker(420, separator câu trước)` của Trần Đức Bảo Trung) cho top-1 trọn vẹn hơn. Đây là bằng chứng cụ thể cho thấy thứ tự separator quan trọng không kém việc chọn đúng loại chunker.
 
 ---
 
@@ -171,5 +175,5 @@ Chạy **5 câu hỏi đánh giá của nhóm** trên mã nguồn cá nhân củ
 | Hướng tiếp cận của tôi (My Approach) | 10 / 10 |
 | Hoàn thiện code (Core Implementation — tests) | 30 / 30 |
 | Dự đoán độ tương tự (Similarity Predictions) | 5 / 5 |
-| Kết quả truy xuất của tôi (Competition Results) | 10 / 10 |
-| **Tổng phần cá nhân** | **60 / 60** |
+| Kết quả truy xuất của tôi (Competition Results) | 9 / 10 *(câu 4: đúng `doc_id` nhưng chunk mang nội dung cần thiết không lọt top-3 — xem failure case ở mục 5)* |
+| **Tổng phần cá nhân** | **59 / 60** |
